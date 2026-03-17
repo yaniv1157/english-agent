@@ -1,0 +1,14 @@
+{
+  "name": "english-daily-agent",
+  "version": "1.0.0",
+  "description": "Daily English Learning Agent for Hebrew speakers",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2"
+  }
+}
