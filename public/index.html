@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>English Daily Agent 📚</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d18;
+      --bg-card: #141425;
+      --bg-card2: #1c1c30;
+      --accent: #5e8cf8;
+      --gold: #f0b840;
+      --text: #e0e0f0;
+      --muted: #7070a0;
+      --border: #252545;
+      --success: #4ecb6e;
+      --fail: #f05050;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, sans-serif;
+      min-height: 100vh;
+    }
+    .app { max-width: 880px; margin: 0 auto; padding: 16px; }
+
+    /* ---- Header ---- */
+    .header {
+      text-align: center; margin-bottom: 20px; padding: 20px 24px;
+      background: var(--bg-card); border-radius: 18px; border: 1px solid var(--border);
+    }
+    .topic-badge {
+      display: inline-block; background: var(--gold); color: #000;
+      padding: 4px 16px; border-radius: 20px; font-size: 13px;
+      font-weight: 700; margin-bottom: 10px;
+    }
+    .header h1 { font-size: 26px; color: var(--accent); margin-bottom: 6px; }
+    .countdown { color: var(--muted); font-size: 13px; }
+
+    /* ---- Tabs ---- */
+    .tabs {
+      display: flex; gap: 8px; margin-bottom: 18px;
+      overflow-x: auto; padding-bottom: 4px;
+    }
+    .tab {
+      padding: 9px 20px; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--muted); cursor: pointer;
+      font-size: 14px; white-space: nowrap; transition: all .2s;
+      flex-shrink: 0;
+    }
+    .tab:hover { color: var(--text); border-color: var(--accent); }
+    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* ---- Cards ---- */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px; margin-bottom: 10px;
+      transition: border-color .2s;
+    }
+    .card:hover { border-color: #3a3a70; }
+
+    /* ---- Word Card ---- */
+    .word-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .word-en { font-size: 20px; font-weight: 700; color: var(--accent); }
+    .word-he { color: var(--gold); font-size: 14px; direction: rtl; }
+    .word-type {
+      font-size: 11px; color: var(--muted); background: var(--bg-card2);
+      padding: 2px 8px; border-radius: 10px;
+    }
+    .word-chevron { color: var(--muted); font-size: 12px; transition: transform .2s; }
+    .word-chevron.open { transform: rotate(180deg); }
+    .word-sentences {
+      margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .sentence-pair { background: var(--bg-card2); border-radius: 10px; padding: 10px 14px; }
+    .sentence-en { font-size: 14px; line-height: 1.7; margin-bottom: 4px; }
+    .sentence-he { font-size: 13px; color: var(--muted); direction: rtl; text-align: right; }
+    strong { color: var(--gold); }
+
+    /* ---- Search ---- */
+    .search-input {
+      width: 100%; padding: 11px 16px; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: 12px;
+      color: var(--text); font-size: 15px; outline: none; margin-bottom: 14px;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--muted); }
+    .word-count { font-size: 13px; color: var(--muted); margin-bottom: 10px; direction: rtl; }
+
+    /* ---- Chunks ---- */
+    .chunk-word { font-size: 17px; font-weight: 700; color: var(--accent); }
+    .chunk-he { color: var(--gold); font-size: 13px; direction: rtl; margin: 4px 0 6px; }
+    .chunk-example { font-size: 14px; line-height: 1.6; }
+    .chunk-example-he {
+      font-size: 12px; color: var(--muted); opacity: .8;
+      direction: rtl; text-align: right; margin-top: 4px;
+    }
+
+    /* ---- Story ---- */
+    .para-en { font-size: 15px; line-height: 1.85; margin-bottom: 8px; }
+    .para-he {
+      font-size: 14px; color: var(--muted); direction: rtl; text-align: right;
+      line-height: 1.7; padding: 10px 12px; background: var(--bg-card2);
+      border-radius: 8px;
+    }
+
+    /* ---- Quiz ---- */
+    .quiz-card { text-align: center; padding: 28px 20px; }
+    .quiz-progress { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+    .quiz-progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 28px; }
+    .quiz-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s; }
+    .quiz-question { font-size: 30px; color: var(--gold); margin-bottom: 6px; direction: rtl; }
+    .quiz-hint { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+    .quiz-answer { font-size: 26px; font-weight: 800; color: var(--accent); margin-bottom: 28px; }
+    .quiz-btn {
+      padding: 12px 28px; border-radius: 12px; border: none;
+      cursor: pointer; font-size: 15px; font-weight: 600; transition: opacity .2s;
+    }
+    .quiz-btn:hover { opacity: .85; }
+    .btn-show { background: var(--accent); color: #fff; }
+    .btn-know { background: var(--success); color: #fff; margin-left: 10px; }
+    .btn-dontknow { background: var(--fail); color: #fff; }
+    .quiz-result { text-align: center; padding: 40px 20px; }
+    .quiz-score { font-size: 64px; font-weight: 900; color: var(--accent); line-height: 1; }
+    .quiz-score-sub { font-size: 15px; color: var(--muted); margin-top: 8px; direction: rtl; }
+    .quiz-emoji { font-size: 36px; margin: 16px 0; }
+    .quiz-retry {
+      margin-top: 20px; padding: 12px 32px; background: var(--accent);
+      color: #fff; border: none; border-radius: 12px; cursor: pointer;
+      font-size: 15px; font-weight: 600;
+    }
+
+    /* ---- Dashboard ---- */
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    .stat-card {
+      background: var(--bg-card2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px; text-align: center;
+    }
+    .stat-value { font-size: 34px; font-weight: 900; color: var(--accent); }
+    .stat-label { font-size: 12px; color: var(--muted); direction: rtl; margin-top: 4px; }
+    .chart {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px;
+    }
+    .chart-title { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 18px; direction: rtl; }
+    .chart-bars { display: flex; align-items: flex-end; gap: 10px; height: 110px; }
+    .chart-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .chart-bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; transition: height .5s; min-height: 2px; opacity: .85; }
+    .chart-bar.today { background: var(--gold); opacity: 1; }
+    .chart-bar-lbl { font-size: 11px; color: var(--muted); }
+    .chart-bar-val { font-size: 10px; color: var(--text); }
+
+    /* ---- Loading ---- */
+    .loading-screen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 420px; gap: 18px; text-align: center;
+    }
+    .spinner {
+      width: 64px; height: 64px; border: 4px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-title { font-size: 20px; direction: rtl; }
+    .loading-timer { font-size: 44px; font-weight: 900; color: var(--accent); line-height: 1; }
+    .loading-sub { font-size: 14px; color: var(--muted); direction: rtl; }
+    .loading-tip {
+      font-size: 13px; color: var(--muted); max-width: 300px;
+      direction: rtl; padding: 10px 16px; background: var(--bg-card);
+      border-radius: 10px; border: 1px solid var(--border);
+    }
+
+    /* ---- Error / Buttons ---- */
+    .error-box {
+      background: #2a1010; border: 1px solid var(--fail); border-radius: 12px;
+      padding: 14px 18px; margin-bottom: 16px; color: #ff9090;
+      text-align: center; direction: rtl; font-size: 14px;
+    }
+    .btn {
+      padding: 10px 20px; border-radius: 12px; border: 1px solid var(--accent);
+      background: transparent; color: var(--accent); cursor: pointer;
+      font-size: 14px; transition: all .2s;
+    }
+    .btn:hover { background: var(--accent); color: #fff; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: .9; }
+    .btn-gold { background: var(--gold); color: #000; border-color: var(--gold); font-weight: 700; }
+    .btn-gold:hover { opacity: .9; }
+
+    /* ---- Generate Section ---- */
+    .gen-section { text-align: center; padding: 40px 20px; }
+    .gen-section h2 { font-size: 22px; margin-bottom: 8px; direction: rtl; }
+    .gen-section p { color: var(--muted); margin-bottom: 26px; direction: rtl; font-size: 15px; }
+
+    /* ---- Top actions bar ---- */
+    .top-bar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+
+    @media (max-width: 560px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .header h1 { font-size: 21px; }
+      .quiz-question { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ================================================================
+    // CONSTANTS
+    // ================================================================
+
+    const TOPICS = [
+      'Daily Life', 'Travel', 'Food', 'Work', 'Health', 'Technology',
+      'Shopping', 'Emotions', 'Nature', 'Education', 'Entertainment', 'City',
+      'Sports', 'Home', 'Fashion', 'Social Situations', 'Plans', 'Problems',
+      'Culture', 'Animals', 'Time', 'Opinions', 'Dreams', 'Success',
+      'Family', 'Music', 'Law', 'Environment', 'Celebrations'
+    ];
+
+    const TOPIC_HE = {
+      'Daily Life': 'חיי יומיום', 'Travel': 'טיולים', 'Food': 'אוכל',
+      'Work': 'עבודה', 'Health': 'בריאות', 'Technology': 'טכנולוגיה',
+      'Shopping': 'קניות', 'Emotions': 'רגשות', 'Nature': 'טבע',
+      'Education': 'חינוך', 'Entertainment': 'בידור', 'City': 'עיר',
+      'Sports': 'ספורט', 'Home': 'בית', 'Fashion': 'אופנה',
+      'Social Situations': 'מצבים חברתיים', 'Plans': 'תוכניות',
+      'Problems': 'בעיות', 'Culture': 'תרבות', 'Animals': 'בעלי חיים',
+      'Time': 'זמן', 'Opinions': 'דעות', 'Dreams': 'חלומות',
+      'Success': 'הצלחה', 'Family': 'משפחה', 'Music': 'מוזיקה',
+      'Law': 'חוק', 'Environment': 'סביבה', 'Celebrations': 'חגיגות'
+    };
+
+    const LOADING_TIPS = [
+      'יוצר 25 מילים חדשות ברמת B1 — כולן בנושא היום 🎯',
+      'אין מילים חוזרות! כל שיעור מביא חומר חדש לגמרי ✨',
+      'הסיפור יעזור לזכור מילים בהקשר טבעי 📖',
+      'אחרי השיעור — תרגלי עם ה-Quiz וראי כמה ידעת 🎉',
+      'הסוכן שולח את כל המילים הישנות כדי לוודא אין חזרות 🔒',
+    ];
+
+    // ================================================================
+    // HELPERS
+    // ================================================================
+
+    const getToday = () => new Date().toISOString().split('T')[0];
+
+    const getTodayTopic = () => {
+      const start = new Date(new Date().getFullYear(), 0, 0);
+      const dayOfYear = Math.floor((new Date() - start) / 86400000);
+      return TOPICS[dayOfYear % TOPICS.length];
+    };
+
+    const getNextLessonMs = () => {
+      const now = new Date();
+      const next = new Date(now);
+      next.setHours(7, 0, 0, 0);
+      if (now.getHours() >= 7) next.setDate(next.getDate() + 1);
+      return next - now;
+    };
+
+    const formatMs = (ms) => {
+      if (ms <= 0) return '00:00:00';
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      const s = Math.floor((ms % 60000) / 1000);
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    };
+
+    const renderBold = (text) => {
+      if (!text) return '';
+      return text.split(/\*\*(.*?)\*\*/g).map((part, i) =>
+        i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+      );
+    };
+
+    // ---- Storage ----
+
+    const loadLesson = () => {
+      try {
+        const raw = localStorage.getItem(`eng-lesson-${getToday()}`);
+        return raw ? JSON.parse(raw) : null;
+      } catch { return null; }
+    };
+
+    const saveLesson = (lesson) =>
+      localStorage.setItem(`eng-lesson-${getToday()}`, JSON.stringify(lesson));
+
+    const loadHistory = () => {
+      try {
+        const raw = localStorage.getItem('eng-word-history');
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    };
+
+    const appendHistory = (words) => {
+      const existing = loadHistory();
+      const newSet = new Set([...existing, ...words.map(w => w.word.toLowerCase())]);
+      localStorage.setItem('eng-word-history', JSON.stringify([...newSet]));
+    };
+
+    const loadStats = () => {
+      try {
+        const raw = localStorage.getItem('eng-stats');
+        return raw ? JSON.parse(raw) : { totalWords: 0, streak: 0, lastDate: null, daily: [] };
+      } catch { return { totalWords: 0, streak: 0, lastDate: null, daily: [] }; }
+    };
+
+    const recordStats = (wordCount) => {
+      const stats = loadStats();
+      const today = getToday();
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+      let streak = stats.streak;
+      if (stats.lastDate === yesterday) streak += 1;
+      else if (stats.lastDate !== today) streak = 1;
+
+      const daily = stats.daily.filter(d => d.date !== today);
+      daily.push({ date: today, count: wordCount });
+
+      const updated = {
+        totalWords: stats.totalWords + wordCount,
+        streak,
+        lastDate: today,
+        daily: daily.slice(-30),
+      };
+      localStorage.setItem('eng-stats', JSON.stringify(updated));
+      return updated;
+    };
+
+    // ================================================================
+    // API
+    // ================================================================
+
+    async function generateLesson(topic, history) {
+      const historyNote = history.length > 0
+        ? `\n\nCRITICAL: Do NOT use any of these previously learned words: ${history.slice(-600).join(', ')}`
+        : '';
+
+      const prompt = `Create a daily English lesson for a B1 level Hebrew speaker on the topic: "${topic}".${historyNote}
+
+Return ONLY valid JSON — no markdown fences, no explanation, just the JSON object:
+{
+  "words": [
+    {
+      "word": "accomplish",
+      "translation": "להשיג",
+      "type": "verb",
+      "sentences": [
+        {"en": "She finally **accomplished** her goal.", "he": "היא סוף סוף השיגה את מטרתה."},
+        {"en": "It takes effort to **accomplish** great things.", "he": "צריך מאמץ כדי להשיג דברים גדולים."}
+      ]
+    }
+  ],
+  "chunks": [
+    {
+      "chunk": "make progress",
+      "translation": "להתקדם",
+      "example": {
+        "en": "We need to **make progress** on this project.",
+        "he": "אנחנו צריכים להתקדם בפרויקט הזה."
+      }
+    }
+  ],
+  "story": {
+    "paragraphs": [
+      {"en": "Paragraph text with **new words** bolded.", "he": "תרגום עברי של הפסקה."}
+    ]
+  }
+}
+
+Requirements:
+- Exactly 25 unique words in "words", all B1 level, relevant to the topic
+- 8-10 items in "chunks"
+- 3-4 story paragraphs; use as many of the 25 words as possible; bold them with **word**
+- Hebrew translations must be accurate
+- Bold the target word in example sentences using **word** syntax`;
+
+      const response = await fetch('/api/generate-lesson', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8000,
+          system: 'You are an expert English teacher for Hebrew speakers. Respond with ONLY valid JSON — no preamble, no markdown fences.',
+          messages: [{ role: 'user', content: prompt }]
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `שגיאת שרת ${response.status}`);
+      }
+
+      const data = await response.json();
+      const raw = data.content?.[0]?.text || '';
+
+      // Strip markdown fences if present
+      const clean = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+      const lesson = JSON.parse(clean);
+
+      // Double-protection: remove any word already in history
+      if (history.length > 0) {
+        const histSet = new Set(history.map(w => w.toLowerCase()));
+        lesson.words = lesson.words.filter(w => !histSet.has(w.word.toLowerCase()));
+      }
+
+      return lesson;
+    }
+
+    // ================================================================
+    // COMPONENTS
+    // ================================================================
+
+    function WordCard({ word, idx, expanded, onToggle }) {
+      return (
+        <div className="card">
+          <div className="word-header" onClick={() => onToggle(idx)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="word-en">{word.word}</span>
+              <span className="word-type">{word.type}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="word-he">{word.translation}</span>
+              <span className={`word-chevron ${expanded ? 'open' : ''}`}>▼</span>
+            </div>
+          </div>
+          {expanded && (
+            <div className="word-sentences">
+              {word.sentences.map((s, i) => (
+                <div key={i} className="sentence-pair">
+                  <div className="sentence-en">{renderBold(s.en)}</div>
+                  <div className="sentence-he">{s.he}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function WordsTab({ words }) {
+      const [search, setSearch] = useState('');
+      const [expanded, setExpanded] = useState(new Set());
+
+      const toggle = (i) => {
+        setExpanded(prev => {
+          const next = new Set(prev);
+          next.has(i) ? next.delete(i) : next.add(i);
+          return next;
+        });
+      };
+
+      const filtered = words.filter(w =>
+        !search ||
+        w.word.toLowerCase().includes(search.toLowerCase()) ||
+        w.translation.includes(search)
+      );
+
+      return (
+        <div>
+          <input
+            className="search-input"
+            placeholder="חפש מילה... (עברית או אנגלית)"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            dir="auto"
+          />
+          <div className="word-count">{filtered.length} מילים</div>
+          {filtered.map((w, i) => (
+            <WordCard key={w.word} word={w} idx={i} expanded={expanded.has(i)} onToggle={toggle} />
+          ))}
+        </div>
+      );
+    }
+
+    function ChunksTab({ chunks }) {
+      return (
+        <div>
+          <div className="word-count">{chunks.length} צירופים</div>
+          {chunks.map((c, i) => (
+            <div key={i} className="card">
+              <div className="chunk-word">{c.chunk}</div>
+              <div className="chunk-he">{c.translation}</div>
+              <div className="chunk-example">{renderBold(c.example.en)}</div>
+              <div className="chunk-example-he">{c.example.he}</div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function StoryTab({ story }) {
+      return (
+        <div>
+          {story.paragraphs.map((p, i) => (
+            <div key={i} className="card">
+              <div className="para-en">{renderBold(p.en)}</div>
+              <div className="para-he">{p.he}</div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function QuizTab({ words }) {
+      const makeQuiz = () => [...words].sort(() => Math.random() - 0.5).slice(0, Math.min(15, words.length));
+
+      const [quizWords, setQuizWords] = useState(makeQuiz);
+      const [current, setCurrent] = useState(0);
+      const [showAnswer, setShowAnswer] = useState(false);
+      const [score, setScore] = useState({ know: 0, miss: 0 });
+      const [done, setDone] = useState(false);
+
+      const total = quizWords.length;
+      const word = quizWords[current];
+
+      const answer = (knew) => {
+        const newScore = knew
+          ? { ...score, know: score.know + 1 }
+          : { ...score, miss: score.miss + 1 };
+        setScore(newScore);
+        if (current + 1 >= total) {
+          setScore(newScore);
+          setDone(true);
+        } else {
+          setCurrent(c => c + 1);
+          setShowAnswer(false);
+        }
+      };
+
+      const restart = () => {
+        setQuizWords(makeQuiz());
+        setCurrent(0);
+        setShowAnswer(false);
+        setScore({ know: 0, miss: 0 });
+        setDone(false);
+      };
+
+      if (done) {
+        const finalKnow = score.know;
+        const pct = Math.round((finalKnow / total) * 100);
+        const emoji = pct >= 85 ? '🌟' : pct >= 65 ? '👍' : '💪';
+        const msg = pct >= 85 ? 'מצוין! שליטה חזקה במילים!' : pct >= 65 ? 'יפה! כדאי לחזור על כמה מילים' : 'כדאי לתרגל שוב — תגיעי לשם!';
+        return (
+          <div className="card quiz-result">
+            <div className="quiz-score">{pct}%</div>
+            <div className="quiz-score-sub">ידעת {finalKnow} מתוך {total} מילים</div>
+            <div className="quiz-emoji">{emoji}</div>
+            <div style={{ color: 'var(--muted)', fontSize: 14, direction: 'rtl' }}>{msg}</div>
+            <button className="quiz-retry" onClick={restart}>נסי שוב</button>
+          </div>
+        );
+      }
+
+      return (
+        <div className="card quiz-card">
+          <div className="quiz-progress">{current + 1} / {total}</div>
+          <div className="quiz-progress-bar">
+            <div className="quiz-progress-fill" style={{ width: `${(current / total) * 100}%` }} />
+          </div>
+          <div className="quiz-question">{word.translation}</div>
+          <div className="quiz-hint">מה התרגום באנגלית?</div>
+          {showAnswer ? (
+            <>
+              <div className="quiz-answer">{word.word}</div>
+              <div>
+                <button className="quiz-btn btn-dontknow" onClick={() => answer(false)}>✗ לא ידעתי</button>
+                <button className="quiz-btn btn-know" onClick={() => answer(true)}>✓ ידעתי</button>
+              </div>
+            </>
+          ) : (
+            <button className="quiz-btn btn-show" onClick={() => setShowAnswer(true)}>הצג תשובה</button>
+          )}
+        </div>
+      );
+    }
+
+    function DashboardTab({ stats }) {
+      const DAY_LABELS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+      const today = getToday();
+
+      const last7 = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(Date.now() - (6 - i) * 86400000);
+        const dateStr = d.toISOString().split('T')[0];
+        const entry = stats.daily.find(x => x.date === dateStr);
+        return { dateStr, count: entry?.count || 0, label: DAY_LABELS[d.getDay()], isToday: dateStr === today };
+      });
+
+      const maxCount = Math.max(...last7.map(d => d.count), 50);
+
+      return (
+        <div>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-value">{stats.totalWords.toLocaleString()}</div>
+              <div className="stat-label">מילים שנלמדו</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{stats.streak} 🔥</div>
+              <div className="stat-label">רצף ימים</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{stats.daily.length}</div>
+              <div className="stat-label">ימי לימוד</div>
+            </div>
+          </div>
+
+          <div className="chart">
+            <div className="chart-title">מילים שנלמדו — 7 ימים אחרונים</div>
+            <div className="chart-bars">
+              {last7.map((d, i) => (
+                <div key={i} className="chart-bar-wrap">
+                  <div className="chart-bar-val">{d.count > 0 ? d.count : ''}</div>
+                  <div
+                    className={`chart-bar ${d.isToday ? 'today' : ''}`}
+                    style={{ height: `${(d.count / maxCount) * 85}px` }}
+                  />
+                  <div className="chart-bar-lbl">{d.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function LoadingScreen({ seconds }) {
+      const tip = LOADING_TIPS[Math.floor(seconds / 12) % LOADING_TIPS.length];
+      return (
+        <div className="loading-screen">
+          <div className="spinner" />
+          <div className="loading-title">יוצר את השיעור שלך...</div>
+          <div className="loading-timer">{seconds}s</div>
+          <div className="loading-sub">זה לוקח בדרך כלל 30–90 שניות ☕</div>
+          <div className="loading-tip">{tip}</div>
+        </div>
+      );
+    }
+
+    // ================================================================
+    // MAIN APP
+    // ================================================================
+
+    function App() {
+      const [lesson, setLesson] = useState(() => loadLesson());
+      const [loading, setLoading] = useState(false);
+      const [loadSec, setLoadSec] = useState(0);
+      const [error, setError] = useState(null);
+      const [tab, setTab] = useState('words');
+      const [stats, setStats] = useState(() => loadStats());
+      const [countdown, setCountdown] = useState('');
+      const timerRef = useRef(null);
+
+      const topic = getTodayTopic();
+      const topicHe = TOPIC_HE[topic] || topic;
+
+      // Countdown clock
+      useEffect(() => {
+        const tick = () => setCountdown(formatMs(getNextLessonMs()));
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+      }, []);
+
+      // Loading seconds counter
+      useEffect(() => {
+        if (loading) {
+          setLoadSec(0);
+          timerRef.current = setInterval(() => setLoadSec(s => s + 1), 1000);
+        } else {
+          clearInterval(timerRef.current);
+        }
+        return () => clearInterval(timerRef.current);
+      }, [loading]);
+
+      const handleGenerate = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const history = loadHistory();
+          const newLesson = await generateLesson(topic, history);
+          saveLesson(newLesson);
+          appendHistory(newLesson.words);
+          const newStats = recordStats(newLesson.words.length);
+          setStats(newStats);
+          setLesson(newLesson);
+          setTab('words');
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const TABS = [
+        { id: 'words',     label: `מילים (${lesson?.words?.length || 0})` },
+        { id: 'chunks',    label: 'Chunks' },
+        { id: 'story',     label: 'סיפור' },
+        { id: 'quiz',      label: 'תרגול' },
+        { id: 'dashboard', label: 'התקדמות' },
+      ];
+
+      return (
+        <div className="app">
+          {/* Header */}
+          <div className="header">
+            <div className="topic-badge">{topicHe} · {topic}</div>
+            <h1>English Daily Agent 📚</h1>
+            <div className="countdown">שיעור הבא בשעה 07:00 — {countdown}</div>
+          </div>
+
+          {/* Error */}
+          {error && <div className="error-box">❌ {error}</div>}
+
+          {/* Loading */}
+          {loading && <LoadingScreen seconds={loadSec} />}
+
+          {/* No lesson yet */}
+          {!loading && !lesson && (
+            <>
+              <div className="card gen-section">
+                <h2>שיעור אנגלית יומי ✨</h2>
+                <p>
+                  נושא היום: <strong style={{ color: 'var(--gold)' }}>{topicHe}</strong>
+                  <br />25 מילות B1 חדשות · Chunks · סיפור · Quiz
+                </p>
+                <button className="btn btn-gold" onClick={handleGenerate} disabled={loading}>
+                  צור שיעור ליום זה 🚀
+                </button>
+              </div>
+              <DashboardTab stats={stats} />
+            </>
+          )}
+
+          {/* Lesson ready */}
+          {!loading && lesson && (
+            <>
+              <div className="top-bar">
+                <button className="btn" style={{ fontSize: 12, padding: '6px 14px' }} onClick={handleGenerate}>
+                  🔄 צור מחדש
+                </button>
+              </div>
+
+              <div className="tabs">
+                {TABS.map(t => (
+                  <div
+                    key={t.id}
+                    className={`tab ${tab === t.id ? 'active' : ''}`}
+                    onClick={() => setTab(t.id)}
+                  >
+                    {t.label}
+                  </div>
+                ))}
+              </div>
+
+              {tab === 'words'     && <WordsTab words={lesson.words} />}
+              {tab === 'chunks'    && <ChunksTab chunks={lesson.chunks} />}
+              {tab === 'story'     && <StoryTab story={lesson.story} />}
+              {tab === 'quiz'      && <QuizTab words={lesson.words} />}
+              {tab === 'dashboard' && <DashboardTab stats={stats} />}
+            </>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
