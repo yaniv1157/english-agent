@@ -1,6 +1,5 @@
 {
-  "outputDirectory": "public",
-  "rewrites": [
-    { "source": "/api/generate-lesson", "destination": "/api/generate-lesson" }
-  ]
+  "buildCommand": null,
+  "installCommand": "npm install",
+  "framework": null
 }
