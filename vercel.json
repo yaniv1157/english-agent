@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/generate-lesson", "destination": "/api/generate-lesson" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
